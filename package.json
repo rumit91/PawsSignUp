@@ -1,0 +1,23 @@
+{
+  "name": "PawsSignUp",
+  "version": "0.0.1",
+  "description": "A simple node server that checks if a new PAWS sign up is available.",
+  "main": "index.js",
+  "dependencies": {
+    "async": "^2.3.0",
+    "cheerio": "^0.22.0",
+    "express": "^4.15.2",
+    "express-sse": "^0.4.1",
+    "feedparser": "^2.2.0",
+    "lodash": "^4.17.4",
+    "pug": "^2.0.0-beta11",
+    "request": "^2.81.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rumit91/PawsSignUp.git"
+  },
+  "author": "Timur Aleshin",
+  "homepage": "https://github.com/rumit91/pawssignup#readme"
+}

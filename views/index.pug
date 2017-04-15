@@ -1,0 +1,36 @@
+html
+  head
+    title= title
+    script.
+        String.prototype.replaceAll = function(search, replace)
+        {
+            //if replace is not sent, return original string otherwise it will
+            //replace search string with 'undefined'.
+            if (replace === undefined) {
+                return this.toString();
+            }
+
+            return this.replace(new RegExp('[' + search + ']', 'g'), replace);
+        };
+
+        var es = new EventSource('/stream');
+
+        es.addEventListener('checkingFeed', function (event) {
+            var output = document.getElementsByTagName('h2')[0];
+            output.innerHTML = (event.data).replaceAll('"', '');
+        });
+
+        es.addEventListener('message', function (event) {
+            var output = document.getElementsByTagName('h3')[0];
+            output.innerHTML = output.innerHTML + '<br />' + (event.data).replaceAll('"', '');
+        });
+
+        es.addEventListener('foundLink', function (event) {
+            var output = document.getElementsByTagName('h3')[0];
+            output.innerHTML = output.innerHTML + '<br />Found sign up link! Redirecting...';
+            window.location.replace((event.data).replaceAll('"', ''));
+        });
+  body
+    h1= header
+    h2
+    h3
