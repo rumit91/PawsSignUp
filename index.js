@@ -8,8 +8,8 @@ var request = require('request');
 
 var verbose = true;
 var timeBetweenRetriesInMs = 500;
-var twentyMinInMs = 20 *60 * 1000;
-var numberOfRetries = twentyMinInMs / timeBetweenRetriesInMs;
+var fifteenMinInMs = 15 * 60 * 1000;
+var numberOfRetries = fifteenMinInMs / timeBetweenRetriesInMs;
 var checkingFeedEvent = 'checkingFeed';
 var foundLinkEvent = 'foundLink';
 var standardMessageEvent = 'message';
@@ -81,7 +81,7 @@ function wasPostedToday(feedParserItem) {
 }
 
 function findLink(feedParserItem) {
-    if (feedParserItem.title && feedParserItem.title.indexOf('Sign Up')) {
+    if (feedParserItem.title && feedParserItem.title.indexOf('Sign Up') != -1) {
         var $ = cheerio.load(feedParserItem.description);
         var paragraphs = $('p').toArray();
         var paragraphContainingLink = _.find(paragraphs, paragraph => $(paragraph).text().indexOf('spots for members of V20') !== -1);
