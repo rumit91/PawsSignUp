@@ -48,14 +48,15 @@ function checkFeed(count) {
 
     var linkFound = false;
     feedparser.on('readable', function () {
-        var stream = this; 
+        var stream = this;
         var post;
+        var signUpLink;
         while (post = stream.read()) {
             if (wasPostedToday(post)) {
-                var signUpLink = findLink(post);
+                signUpLink = findLink(post);
                 if (signUpLink) {
                     linkFound = true;
-                    output(findLink(post), foundLinkEvent);
+                    output(signUpLink, foundLinkEvent);
                 } else {
                     output('Found post from today, but no sign up link :(', standardMessageEvent);
                 }
@@ -108,7 +109,7 @@ app.get('/stream', sse.init);
 
 app.get('/', function (req, res) {
     res.render('index', { title: 'HAX for Michelle', header: "Ok, let's try to get you signed up..." });
-    setTimeout(checkFeed, timeBetweenRetriesInMs);  
+    setTimeout(checkFeed, timeBetweenRetriesInMs);
 });
 
 app.listen(3000, function () {

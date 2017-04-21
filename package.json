@@ -13,7 +13,12 @@
     "pug": "^2.0.0-beta11",
     "request": "^2.81.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-jshint": "^2.0.4",
+    "jshint": "^2.9.4",
+    "jshint-stylish": "^2.2.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rumit91/PawsSignUp.git"
