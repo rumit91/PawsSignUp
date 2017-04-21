@@ -6,23 +6,9 @@ var _ = require('lodash');
 var pug = require('pug');
 var request = require('request');
 
-var sse = new SSE();
-var app = express();
-app.set('view engine', 'pug');
-
-app.get('/stream', sse.init);
-
-app.get('/', function (req, res) {
-    res.render('index', { title: 'HAX for Michelle', header: "Ok, let's try to get you signed up..." });
-    setTimeout(checkFeed, 500);  
-});
-
-app.listen(3000, function () {
-    console.log('Server is running...');
-});
-
-
-var numberOfRetries = 10000; // This will give us at least an hour's worth of trying.
+var timeBetweenRetriesInMs = 500;
+var twentyMinInMs = 20 *60 * 1000;
+var numberOfRetries = twentyMinInMs / timeBetweenRetriesInMs;
 var checkingFeedEvent = 'checkingFeed';
 var foundLinkEvent = 'foundLink';
 var standardMessageEvent = 'message';
@@ -80,7 +66,7 @@ function checkFeed(count) {
         if (!linkFound) {
             sse.send('Nothing yet...', standardMessageEvent);
             if (count < numberOfRetries) {
-                setTimeout(() => { checkFeed(count+1); }, 500);
+                setTimeout(() => { checkFeed(count+1); }, timeBetweenRetriesInMs);
             }
         }
     });
@@ -105,3 +91,18 @@ function findLink(feedParserItem) {
     }
     return null;
 }
+
+var sse = new SSE();
+var app = express();
+app.set('view engine', 'pug');
+
+app.get('/stream', sse.init);
+
+app.get('/', function (req, res) {
+    res.render('index', { title: 'HAX for Michelle', header: "Ok, let's try to get you signed up..." });
+    setTimeout(checkFeed, timeBetweenRetriesInMs);  
+});
+
+app.listen(3000, function () {
+    console.log('Server is running...');
+});
