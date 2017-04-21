@@ -6,6 +6,7 @@ var _ = require('lodash');
 var pug = require('pug');
 var request = require('request');
 
+var verbose = true;
 var timeBetweenRetriesInMs = 500;
 var twentyMinInMs = 20 *60 * 1000;
 var numberOfRetries = twentyMinInMs / timeBetweenRetriesInMs;
@@ -19,16 +20,16 @@ function checkFeed(count) {
     }
 
     if (count >= numberOfRetries) {
-        sse.send('Reached maximum number of retries: ' + numberOfRetries + '. If you want to keep trying, please refresh.', checkingFeedEvent);
+        output('Reached maximum number of retries: ' + numberOfRetries + '. If you want to keep trying, please refresh.', checkingFeedEvent);
         return;
     }
 
-    sse.send('Checking PAWS website feed... ' + count, checkingFeedEvent);
+    output('Checking PAWS website feed... ' + count, checkingFeedEvent);
     var feedRequest = request('https://surgicalopportunitiesscheduler.wordpress.com/feed/');
     var feedparser = new FeedParser();
 
     feedRequest.on('error', function (error) {
-        sse.send(error, standardMessageEvent);
+        output(error, standardMessageEvent);
     });
 
     feedRequest.on('response', function (response) {
@@ -42,7 +43,7 @@ function checkFeed(count) {
     });
 
     feedparser.on('error', function (error) {
-        sse.send(error, standardMessageEvent);
+        output(error, standardMessageEvent);
     });
 
     var linkFound = false;
@@ -54,9 +55,9 @@ function checkFeed(count) {
                 var signUpLink = findLink(post);
                 if (signUpLink) {
                     linkFound = true;
-                    sse.send(findLink(post), foundLinkEvent);
+                    output(findLink(post), foundLinkEvent);
                 } else {
-                    sse.send('Found post from today, but no sign up link :(', standardMessageEvent);
+                    output('Found post from today, but no sign up link :(', standardMessageEvent);
                 }
             }
         }
@@ -64,7 +65,7 @@ function checkFeed(count) {
 
     feedparser.on('end', function () {
         if (!linkFound) {
-            sse.send('Nothing yet...', standardMessageEvent);
+            output('Nothing yet...', standardMessageEvent);
             if (count < numberOfRetries) {
                 setTimeout(() => { checkFeed(count+1); }, timeBetweenRetriesInMs);
             }
@@ -90,6 +91,13 @@ function findLink(feedParserItem) {
         }
     }
     return null;
+}
+
+function output(message, event) {
+    if (verbose) {
+        console.log(message);
+    }
+    sse.send(message, event);
 }
 
 var sse = new SSE();
