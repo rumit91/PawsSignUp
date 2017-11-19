@@ -24,7 +24,7 @@
     "url": "git+https://github.com/rumit91/PawsSignUp.git"
   },
   "scripts": {
-      "start": "node index.js"
+    "start": "node index.js"
   },
   "author": "Timur Aleshin",
   "homepage": "https://github.com/rumit91/pawssignup#readme"

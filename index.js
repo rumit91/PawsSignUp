@@ -13,6 +13,7 @@ var numberOfRetries = fifteenMinInMs / timeBetweenRetriesInMs;
 var checkingFeedEvent = 'checkingFeed';
 var foundLinkEvent = 'foundLink';
 var standardMessageEvent = 'message';
+var redirect = 'redirect';
 
 function checkFeed(count) {
     if (isNaN(count)) {
@@ -50,15 +51,16 @@ function checkFeed(count) {
     feedparser.on('readable', function () {
         var stream = this;
         var post;
-        var signUpLink;
+        var paragraphsWithSignUpLinks = [];
         while (post = stream.read()) {
             if (wasPostedToday(post)) {
-                signUpLink = findLink(post);
-                if (signUpLink) {
+                paragraphsWithSignUpLinks = findParagraphsWithLinks(post);
+                if (paragraphsWithSignUpLinks && paragraphsWithSignUpLinks.length > 0) {
                     linkFound = true;
-                    output(signUpLink, foundLinkEvent);
+                    output(createFoundLinkMessage(post, paragraphsWithSignUpLinks), foundLinkEvent);
+                    openFormIfPossible(paragraphsWithSignUpLinks);
                 } else {
-                    output('Found post from today, but no sign up link :(', standardMessageEvent);
+                    output(createPostWithoutLinkMessage(post), standardMessageEvent);
                 }
             }
         }
@@ -66,7 +68,7 @@ function checkFeed(count) {
 
     feedparser.on('end', function () {
         if (!linkFound) {
-            output('Nothing yet...', standardMessageEvent);
+            output('Nothing yet...' + count, standardMessageEvent);
             if (count < numberOfRetries) {
                 setTimeout(() => { checkFeed(count+1); }, timeBetweenRetriesInMs);
             }
@@ -75,23 +77,39 @@ function checkFeed(count) {
 }
 
 function wasPostedToday(feedParserItem) {
-    var currentDate = new Date();
+    var currentDate = new Date("November 18, 2017 11:13:00");
     var postDate = new Date(feedParserItem.date);
 
     return currentDate.toDateString() === postDate.toDateString();
 }
 
-function findLink(feedParserItem) {
+function findParagraphsWithLinks(feedParserItem) {
     if (feedParserItem.title && feedParserItem.title.indexOf('Sign Up') != -1) {
         var $ = cheerio.load(feedParserItem.description);
         var paragraphs = $('p').toArray();
-        var paragraphContainingLink = _.find(paragraphs, paragraph => $(paragraph).text().indexOf('spots for members of V20') !== -1);
-        if (paragraphContainingLink) {
-            var link = $(paragraphContainingLink).children('a').attr('href');
-            return link;
-        }
+        return _.filter(paragraphs, paragraph => $(paragraph).children('a').length > 0);
     }
     return null;
+}
+
+function openFormIfPossible(paragraphsWithSignUpLinks) {
+    var $ = cheerio.load(_.last(paragraphsWithSignUpLinks));
+    output($('a').last().attr('href'), redirect);
+}
+
+function createFoundLinkMessage(post, paragraphs) {
+    var message = 'Post: <a target="_blank" href="' + post.link + '">' + post.title + '</a></br /><br />';
+    var messageStrings = _.map(paragraphs, paragraph => {
+        var $ = cheerio.load(paragraph);
+        $('a').attr('style', 'font-size:30;background-color:pink;');
+        return $('p').html();
+    });
+    return message + _.reduce(messageStrings, (message, part) => message + part + '<br />');
+}
+
+function createPostWithoutLinkMessage(post) {
+    return 'Found post from today, but no sign up link :( <br /> Post: <a target="_blank" href="' + post.link + '">' + post.title 
+        + '</a></br /><br />';
 }
 
 function output(message, event) {

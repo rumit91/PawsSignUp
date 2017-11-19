@@ -17,18 +17,30 @@ html
 
         es.addEventListener('checkingFeed', function (event) {
             var output = document.getElementsByTagName('h2')[0];
-            output.innerHTML = (event.data).replaceAll('"', '');
+            output.innerHTML = (event.data).replaceAll('"', '').replaceAll('\\\\', '');
         });
 
         es.addEventListener('message', function (event) {
             var output = document.getElementsByTagName('h3')[0];
-            output.innerHTML = output.innerHTML + '<br />' + (event.data).replaceAll('"', '');
+            output.innerHTML = (event.data).replaceAll('"', '').replaceAll('\\\\', '') + '<br />' +  output.innerHTML;
         });
 
         es.addEventListener('foundLink', function (event) {
             var output = document.getElementsByTagName('h3')[0];
-            output.innerHTML = output.innerHTML + '<br />Found sign up link! Redirecting...';
-            window.location.replace((event.data).replaceAll('"', ''));
+            output.innerHTML = output.innerHTML + '<br />Found post with sign up link! <br /><br />' 
+                + (event.data).replaceAll('"', '').replaceAll('\\\\', '');
+        });
+
+        es.addEventListener('redirect', function (event) {
+            var output = document.getElementsByTagName('h3')[0];
+            if ((event.data).replaceAll('"', '')) {
+                output.innerHTML = output.innerHTML
+                    + '<br /><br /> Opening a new tab...';
+                window.open((event.data).replaceAll('"', ''));
+            } else {
+                output.innerHTML = output.innerHTML
+                    + '<br /><br /> Could not open a new tab :(';
+            }
         });
   body
     h1= header

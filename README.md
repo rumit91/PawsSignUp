@@ -14,6 +14,12 @@ To give my fiance a chance to sign up I created a simple node server that checks
 - [Cheerio](https://github.com/cheeriojs/cheerio) - used for navigating through the HTML of the RSS posts and extracting the sign up form link.
 - [Pug](https://github.com/pugjs/pug) - simple template engine for displaying the HTML on the client.
 
+## Dev steps
+1. Clone the repo.
+1. Run `npm install` in the repo folder.
+1. Run `node index.js` to start the server.
+1. Open up the browser and navigate to `http://localhost:3000`.
+
 ## Deployment Notes
 ### Changing the Port Setting
 When deploying to Azure the port that Express is litening to need to be set to `process.env.port` for things to work properly. I wasted a bunch of time because I forgot about this.
