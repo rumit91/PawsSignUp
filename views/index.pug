@@ -16,8 +16,6 @@ html
 
         var socket = io();
 
-        //var es = new EventSource('/stream');
-
         socket.on('checkingFeed', function (msg) {
             var output = document.getElementsByTagName('h2')[0];
             output.innerHTML = msg.replaceAll('"', '').replaceAll('\\\\', '');
