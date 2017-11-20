@@ -1,6 +1,7 @@
 html
   head
     title= title
+    script(src='/socket.io/socket.io.js')
     script.
         String.prototype.replaceAll = function(search, replace)
         {
@@ -13,35 +14,38 @@ html
             return this.replace(new RegExp('[' + search + ']', 'g'), replace);
         };
 
-        var es = new EventSource('/stream');
+        var socket = io();
 
-        es.addEventListener('checkingFeed', function (event) {
+        //var es = new EventSource('/stream');
+
+        socket.on('checkingFeed', function (msg) {
             var output = document.getElementsByTagName('h2')[0];
-            output.innerHTML = (event.data).replaceAll('"', '').replaceAll('\\\\', '');
+            output.innerHTML = msg.replaceAll('"', '').replaceAll('\\\\', '');
         });
 
-        es.addEventListener('message', function (event) {
+        socket.on('message', function (msg) {
             var output = document.getElementsByTagName('h3')[0];
-            output.innerHTML = (event.data).replaceAll('"', '').replaceAll('\\\\', '') + '<br />' +  output.innerHTML;
+            output.innerHTML = msg.replaceAll('"', '').replaceAll('\\\\', '') + '<br />' +  output.innerHTML;
         });
 
-        es.addEventListener('foundLink', function (event) {
+        socket.on('foundLink', function (msg) {
             var output = document.getElementsByTagName('h3')[0];
             output.innerHTML = output.innerHTML + '<br />Found post with sign up link! <br /><br />' 
-                + (event.data).replaceAll('"', '').replaceAll('\\\\', '');
+                + msg.replaceAll('"', '').replaceAll('\\\\', '');
         });
 
-        es.addEventListener('redirect', function (event) {
+        socket.on('redirect', function (msg) {
             var output = document.getElementsByTagName('h3')[0];
-            if ((event.data).replaceAll('"', '')) {
+            if (msg.replaceAll('"', '')) {
                 output.innerHTML = output.innerHTML
                     + '<br /><br /> Opening a new tab...';
-                window.open((event.data).replaceAll('"', ''));
+                window.open(msg.replaceAll('"', ''));
             } else {
                 output.innerHTML = output.innerHTML
                     + '<br /><br /> Could not open a new tab :(';
             }
         });
+
   body
     h1= header
     h2

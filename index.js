@@ -1,10 +1,10 @@
 var cheerio = require('cheerio');
 var express = require('express');
-var SSE = require('express-sse');
 var FeedParser = require('feedparser');
 var _ = require('lodash');
 var pug = require('pug');
 var request = require('request');
+var sio = require('socket.io');
 
 var verbose = true;
 var timeBetweenRetriesInMs = 500;
@@ -14,23 +14,26 @@ var checkingFeedEvent = 'checkingFeed';
 var foundLinkEvent = 'foundLink';
 var standardMessageEvent = 'message';
 var redirect = 'redirect';
+var activeSockets = {};
 
-function checkFeed(count) {
-    if (isNaN(count)) {
-        count = 0;
-    }
-
-    if (count >= numberOfRetries) {
-        output('Reached maximum number of retries: ' + numberOfRetries + '. If you want to keep trying, please refresh.', checkingFeedEvent);
+function checkFeed(count, socket) {
+    if (!activeSockets[socket.id]) {
+        console.log('Connection was already closed.');
         return;
     }
 
-    output('Checking PAWS website feed... ' + count, checkingFeedEvent);
+    if (count >= numberOfRetries) {
+        output('Reached maximum number of retries: ' + numberOfRetries + '. If you want to keep trying, please refresh.', 
+        checkingFeedEvent, socket);
+        return;
+    }
+
+    output('Checking PAWS website feed... ' + count, checkingFeedEvent, socket);
     var feedRequest = request('https://surgicalopportunitiesscheduler.wordpress.com/feed/');
     var feedparser = new FeedParser();
 
     feedRequest.on('error', function (error) {
-        output(error, standardMessageEvent);
+        output(error, standardMessageEvent, socket);
     });
 
     feedRequest.on('response', function (response) {
@@ -44,7 +47,7 @@ function checkFeed(count) {
     });
 
     feedparser.on('error', function (error) {
-        output(error, standardMessageEvent);
+        output(error, standardMessageEvent, socket);
     });
 
     var linkFound = false;
@@ -57,10 +60,10 @@ function checkFeed(count) {
                 paragraphsWithSignUpLinks = findParagraphsWithLinks(post);
                 if (paragraphsWithSignUpLinks && paragraphsWithSignUpLinks.length > 0) {
                     linkFound = true;
-                    output(createFoundLinkMessage(post, paragraphsWithSignUpLinks), foundLinkEvent);
-                    openFormIfPossible(paragraphsWithSignUpLinks);
+                    output(createFoundLinkMessage(post, paragraphsWithSignUpLinks), foundLinkEvent, socket);
+                    openFormIfPossible(paragraphsWithSignUpLinks, socket);
                 } else {
-                    output(createPostWithoutLinkMessage(post), standardMessageEvent);
+                    output(createPostWithoutLinkMessage(post), standardMessageEvent, socket);
                 }
             }
         }
@@ -68,16 +71,16 @@ function checkFeed(count) {
 
     feedparser.on('end', function () {
         if (!linkFound) {
-            output('Nothing yet...' + count, standardMessageEvent);
+            output('Nothing yet...' + count, standardMessageEvent, socket);
             if (count < numberOfRetries) {
-                setTimeout(() => { checkFeed(count+1); }, timeBetweenRetriesInMs);
+                setTimeout(() => { checkFeed(count+1, socket); }, timeBetweenRetriesInMs);
             }
         }
     });
 }
 
 function wasPostedToday(feedParserItem) {
-    var currentDate = new Date("November 18, 2017 11:13:00");
+    var currentDate = new Date("November 11, 2017 11:13:00");
     var postDate = new Date(feedParserItem.date);
 
     return currentDate.toDateString() === postDate.toDateString();
@@ -92,9 +95,9 @@ function findParagraphsWithLinks(feedParserItem) {
     return null;
 }
 
-function openFormIfPossible(paragraphsWithSignUpLinks) {
+function openFormIfPossible(paragraphsWithSignUpLinks, socket) {
     var $ = cheerio.load(_.last(paragraphsWithSignUpLinks));
-    output($('a').last().attr('href'), redirect);
+    output($('a').last().attr('href'), redirect, socket);
 }
 
 function createFoundLinkMessage(post, paragraphs) {
@@ -112,24 +115,39 @@ function createPostWithoutLinkMessage(post) {
         + '</a></br /><br />';
 }
 
-function output(message, event) {
+function output(message, event, socket) {
     if (verbose) {
         console.log(message);
     }
-    sse.send(message, event);
+    socket.emit(event, message);
 }
 
-var sse = new SSE();
 var app = express();
-app.set('view engine', 'pug');
+var server = require('http').createServer(app);
+var io = sio.listen(server);
 
-app.get('/stream', sse.init);
+app.set('view engine', 'pug');
 
 app.get('/', function (req, res) {
     res.render('index', { title: 'HAX for Michelle', header: "Ok, let's try to get you signed up..." });
-    setTimeout(checkFeed, timeBetweenRetriesInMs);
 });
 
-app.listen(process.env.port || 3000, function () {
+io.sockets.on('connection', function (socket) {
+    console.log('connection established');
+    activeSockets[socket.id] = true;
+    console.log(activeSockets);
+
+    setTimeout(() => {
+        checkFeed(0, socket);
+    }, timeBetweenRetriesInMs);
+        
+    socket.on('disconnect', function () {
+        console.log('connection closed');
+        activeSockets[socket.id] = false;
+        console.log(activeSockets);
+    });
+});
+
+server.listen(process.env.port || 3000, function () {
     console.log('Server is running...');
 });
