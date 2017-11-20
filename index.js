@@ -80,7 +80,7 @@ function checkFeed(count, socket) {
 }
 
 function wasPostedToday(feedParserItem) {
-    var currentDate = new Date();
+    var currentDate = new Date("November 11, 2017 11:13:00");
     var postDate = new Date(feedParserItem.date);
 
     return currentDate.toDateString() === postDate.toDateString();
